@@ -248,6 +248,10 @@ if __name__ == '__main__':
                         help='temporary location for PLC files')
     args = parser.parse_args()
 
+    if args.x:
+        app = wx.App()
+        PLCOpenService()
+
     pyro_thread = MainWorkerDaemon(
         args.i, args.p, args.tmpdir, default_evaluator)
     pyro_thread.daemon = True
@@ -255,8 +259,6 @@ if __name__ == '__main__':
     pyro_thread.event.wait()
 
     if args.x:
-        app = wx.App()
-        PLCOpenService()
         app.MainLoop()
     else:
         try:
