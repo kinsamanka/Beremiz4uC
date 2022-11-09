@@ -26,7 +26,7 @@ from pubsub import pub
 import wx
 import wx.adv
 
-from runtime import default_evaluator, MainWorker
+from runtime import default_evaluator, MainWorker, PlcStatus
 from runtime.PLCObject import PLCObject
 import util.paths as paths
 
@@ -42,8 +42,8 @@ Pyro5.config.SERPENT_BYTES_REPR = True
 [ITEM_PLC_START, ITEM_PLC_STOP, ITEM_EXIT] = range(3)
 
 ITEM_PLC_STATE = {
-    ITEM_PLC_START: 'Stop PLC',
-    ITEM_PLC_STOP: 'Start PLC',
+    PlcStatus.Started: ('Stop PLC', ITEM_PLC_START, TRAY_START_ICON),
+    PlcStatus.Stopped: ('Start PLC', ITEM_PLC_STOP, TRAY_STOP_ICON),
 }
 
 
@@ -53,7 +53,7 @@ class PLCOpenTaskBar(wx.adv.TaskBarIcon):
         self.myapp_frame = frame
         self.set_icon(TRAY_ICON)
         self.Bind(wx.adv.EVT_TASKBAR_LEFT_DOWN, frame.on_left_down)
-        self.plcstate = ITEM_PLC_STOP
+        self.plcstate = PlcStatus.Empty
         pub.subscribe(self.set_plcstate, 'plc state')
 
     def _create_menu_item(self, menu, label, id=None):
@@ -64,9 +64,10 @@ class PLCOpenTaskBar(wx.adv.TaskBarIcon):
 
     def CreatePopupMenu(self):
         menu = wx.Menu()
-        self._create_menu_item(
-            menu, ITEM_PLC_STATE[self.plcstate], id=self.plcstate)
-        menu.AppendSeparator()
+        if self.plcstate in (PlcStatus.Started, PlcStatus.Stopped):
+            a, b, _ = ITEM_PLC_STATE[self.plcstate]
+            self._create_menu_item(menu, a, id=b)
+            menu.AppendSeparator()
         self._create_menu_item(menu, 'Exit', id=ITEM_EXIT)
         return menu
 
@@ -82,14 +83,11 @@ class PLCOpenTaskBar(wx.adv.TaskBarIcon):
             self.myapp_frame.Close()
 
     def set_plcstate(self, state):
-        if 'Stop' in state:
-            self.plcstate = ITEM_PLC_STOP
-            self.set_icon(TRAY_STOP_ICON)
-        elif 'Start' in state:
-            self.plcstate = ITEM_PLC_START
-            self.set_icon(TRAY_START_ICON)
+        self.plcstate = state
+        if state in (PlcStatus.Started, PlcStatus.Stopped):
+            _, _, i = ITEM_PLC_STATE[state]
+            self.set_icon(i)
         else:
-            self.plcstate = ITEM_PLC_STOP
             self.set_icon(TRAY_ICON)
 
 
