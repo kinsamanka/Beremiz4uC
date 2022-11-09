@@ -220,6 +220,7 @@ class MainWorkerDaemon(threading.Thread):
         super().__init__()
         self.event = threading.Event()
         self.pyro_daemon = PyroDaemon(host, port, wdir, evaluator, self.event)
+        self.pyro_daemon.daemon = True
 
     def run(self):
         MainWorker.runloop(self.start_pyro)
