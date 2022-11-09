@@ -82,12 +82,15 @@ class PLCOpenTaskBar(wx.adv.TaskBarIcon):
             self.myapp_frame.Close()
 
     def set_plcstate(self, state):
-        if state == 'Stopped':
+        if 'Stop' in state:
             self.plcstate = ITEM_PLC_STOP
             self.set_icon(TRAY_STOP_ICON)
-        else:
+        elif 'Start' in state:
             self.plcstate = ITEM_PLC_START
             self.set_icon(TRAY_START_ICON)
+        else:
+            self.plcstate = ITEM_PLC_STOP
+            self.set_icon(TRAY_ICON)
 
 
 class PLCOpenService(wx.Frame):
