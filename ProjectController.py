@@ -878,14 +878,22 @@ class ProjectController(ConfigTreeNode, PLCControler):
         # Now extract C files of stdout
         C_files = [fname for fname in result.splitlines() if fname[
             -2:] == ".c" or fname[-2:] == ".C"]
-        # remove those that are not to be compiled because included by others
-        C_files.remove("POUS.c")
         if not C_files:
             self.logger.write_error(
                 _("Error : At least one configuration and one resource must be declared in PLC !\n"))
             return False
         # transform those base names to full names with path
         C_files = [os.path.join(buildpath, filename) for filename in C_files]
+
+        # remove '#include "POUS.c"', compile it separately
+        for c in C_files:
+            with open(c, 'r+') as f:
+                d = ''.join([i for i in f if "POUS.c" not in i])
+                f.seek(0)
+                if "POUS" in c:
+                    f.write('#include "POUS.h"\n')
+                f.write(d)
+                f.truncate()
 
         # prepend beremiz include to configuration header
         H_files = [fname for fname in result.splitlines() if fname[
