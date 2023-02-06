@@ -55,7 +55,7 @@ from editors.FileManagementPanel import FileManagementPanel
 from editors.ProjectNodeEditor import ProjectNodeEditor
 from editors.IECCodeViewer import IECCodeViewer
 from editors.DebugViewer import DebugViewer, REFRESH_PERIOD
-from dialogs import UriEditor, IDManager
+from dialogs import UriEditor
 from PLCControler import PLCControler
 from plcopen.structures import IEC_KEYWORDS
 from plcopen.types_enums import ComputeConfigurationResourceName, ITEM_CONFNODE
@@ -1308,11 +1308,6 @@ class ProjectController(ConfigTreeNode, PLCControler):
 
     _IECCodeView = None
 
-    def _showIDManager(self):
-        dlg = IDManager(self.AppFrame, self)
-        dlg.ShowModal()
-        dlg.Destroy()
-
     def _showIECcode(self):
         self._OpenView("IEC code")
 
@@ -2074,12 +2069,6 @@ class ProjectController(ConfigTreeNode, PLCControler):
             "tooltip": _("Repair broken PLC"),
             "method":   "_Repair",
             "shown":      False,
-        },
-        {
-            "bitmap":    "IDManager",
-            "name":    _("ID Manager"),
-            "tooltip": _("Manage secure connection identities"),
-            "method":   "_showIDManager",
         },
         {
             "bitmap":    "ShowIECcode",
