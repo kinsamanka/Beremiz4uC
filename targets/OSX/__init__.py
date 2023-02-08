@@ -32,7 +32,7 @@ class OSX_target(toolchain_gcc):
 
     def getBuilderCFLAGS(self):
         return toolchain_gcc.getBuilderCFLAGS(self) + \
-            ["-fPIC", "-Wno-implicit-function-declaration",
+            ["-fPIC", "-Werror=-implicit-function-declaration",
              "-Wno-int-conversion", "-Wno-parentheses-equality",
              "-Wno-varargs"]
 
