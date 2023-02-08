@@ -892,6 +892,8 @@ class ProjectController(ConfigTreeNode, PLCControler):
                 f.seek(0)
                 if "POUS" in c:
                     f.write('#include "POUS.h"\n')
+                    for c in self.Project.getconfigurations():
+                        f.write(f'#include "{c.getname()}.h"\n')
                 f.write(d)
                 f.truncate()
 
