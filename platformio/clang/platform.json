@@ -1,0 +1,15 @@
+{
+  "name": "clang",
+  "title": "Clang",
+  "description": "Clang development platform is intended to be used for desktop OS. This platform uses built-in Clang toolchains.",
+  "license": "Apache-2.0",
+  "keywords": [
+      "dev-platform",
+      "clang",
+      "desktop"
+  ],
+  "engines": {
+    "platformio": "^6"
+  },
+  "version": "1.0.0"
+}

@@ -1,0 +1,6 @@
+
+                  <xsd:element name="PlatformIO">
+                    <xsd:complexType>
+                      %(toolchain_pio)s
+                    </xsd:complexType>
+                  </xsd:element>

@@ -38,6 +38,8 @@ Beremiz Targets
 from os import listdir, path
 import util.paths as paths
 import importlib
+from .toolchain_pio import XSD as PIO_XSD
+import sys
 
 _base_path = paths.AbsDir(__file__)
 
@@ -57,7 +59,8 @@ targets = dict([(name, {"xsd":   path.join(_base_path, name, "XSD"),
                     not name.startswith("__"))])
 
 toolchains = {"gcc":  path.join(_base_path, "XSD_toolchain_gcc"),
-              "makefile":  path.join(_base_path, "XSD_toolchain_makefile")}
+              "makefile":  path.join(_base_path, "XSD_toolchain_makefile"),
+              "pio":  path.join(_base_path, "XSD_toolchain_pio")}
 
 
 def GetBuilder(targetname):
@@ -70,8 +73,12 @@ def GetTargetChoices():
 
     # Get all xsd toolchains
     for toolchainname, xsdfilename in toolchains.items():
-        if path.isfile(xsdfilename):
-            DictXSD_toolchain["toolchain_"+toolchainname] = open(xsdfilename).read()
+        if 'pio' in toolchainname:
+            xsd = PIO_XSD
+        elif path.isfile(xsdfilename):
+            xsd = open(xsdfilename).read()
+
+        DictXSD_toolchain["toolchain_"+toolchainname] = xsd
 
     # Get all xsd targets
     for target_name, nfo in targets.items():
@@ -83,6 +90,14 @@ def GetTargetChoices():
 
 
 def GetTargetCode(targetname):
+
+    if 'PlatformIO' in targetname:
+        targetname = "Linux"
+        if sys.platform.startswith('darwin'):
+            targetname = "OSX"
+        elif sys.platform.startswith('win'):
+            targetname = "Win32"
+
     codedesc = targets[targetname]["code"]
     code = "\n".join([open(fpath).read() for _fname, fpath in sorted(codedesc.items())])
     return code
