@@ -156,12 +156,8 @@ class CLIController(LocalRuntimeMixin, ProjectController):
     def build_project(self, target):
         if target:
             self.SetParamsAttribute("BeremizRoot.TargetType", target)
-        elif sys.platform.startswith('linux'):
-            self.SetParamsAttribute("BeremizRoot.TargetType", "Linux")
-        elif sys.platform.startswith('darwin'):
-            self.SetParamsAttribute("BeremizRoot.TargetType", "OSX")
-        elif sys.platform.startswith('win'):
-            self.SetParamsAttribute("BeremizRoot.TargetType", "Win32")
+        else:
+            self.SetParamsAttribute("BeremizRoot.TargetType", "PlatformIO")
             
         return 0 if self._Build() else 1
 
