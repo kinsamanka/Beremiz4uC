@@ -65,7 +65,7 @@ from runtime import PlcStatus
 from ConfigTreeNode import ConfigTreeNode, XSDSchemaErrorMessage
 from POULibrary import UserAddressedException
 
-base_folder = paths.AbsParentDir(__file__)
+base_folder = paths.AbsDir(__file__)
 
 MATIEC_ERROR_MODEL = re.compile(
     r".*\.st:(\d+)-(\d+)\.\.(\d+)-(\d+): (?:error)|(?:warning) : (.*)$")
@@ -116,7 +116,7 @@ class Iec2CSettings(object):
     def findCmd(self):
         cmd = "iec2c" + (".exe" if os.name == 'nt' else "")
         paths = [
-            os.path.join(base_folder, "matiec")
+            os.path.join(base_folder, "lib", "matiec", "bin")
         ]
         path = self.findObject(
             paths, lambda p: os.path.isfile(os.path.join(p, cmd)))
@@ -129,7 +129,7 @@ class Iec2CSettings(object):
 
     def findLibPath(self):
         paths = [
-            os.path.join(base_folder, "matiec", "lib"),
+            os.path.join(base_folder, "lib", "matiec", "lib"),
             "/usr/lib/matiec"
         ]
         path = self.findObject(
