@@ -12,7 +12,6 @@
 #ifndef HAVE_RETAIN
 #include <stdio.h>
 #include <stdint.h>
-#include <unistd.h>
 #include "iec_types.h"
 
 int GetRetainSize(void);

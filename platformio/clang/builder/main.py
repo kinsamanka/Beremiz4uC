@@ -40,6 +40,9 @@ if "compiledb" in COMMAND_LINE_TARGETS:
 # Restore C/C++ build flags as they were overridden by env.Tool
 env.Append(CFLAGS=backup_cflags, CXXFLAGS=backup_cxxflags)
 
+# Remove suffix
+env.Replace(PROGSUFFIX='')
+
 #
 # Target: Build executable program
 #
