@@ -27,6 +27,7 @@
 
 
 
+from pubsub import pub
 import wx
 
 from editors.EditorPanel import EditorPanel
@@ -576,6 +577,7 @@ class ConfTreeNodeEditor(EditorPanel):
             if res is None:
                 res = ""
             choicectrl.SetStringSelection(res)
+            wx.CallAfter(pub.sendMessage, path, e=res)
             event.Skip()
         return OnChoiceChanged
 
@@ -583,6 +585,7 @@ class ConfTreeNodeEditor(EditorPanel):
         def OnChoiceContentChanged(event):
             self.SetConfNodeParamsAttribute(path, choicectrl.GetStringSelection())
             wx.CallAfter(self.RefreshConfNodeParamsSizer)
+            wx.CallAfter(pub.sendMessage, path, e=choicectrl.GetStringSelection())
             event.Skip()
         return OnChoiceContentChanged
 
@@ -597,6 +600,7 @@ class ConfTreeNodeEditor(EditorPanel):
             if refresh:
                 wx.CallAfter(self.ParentWindow._Refresh, TITLE, FILEMENU, PROJECTTREE, PAGETITLES)
                 wx.CallAfter(self.ParentWindow.SelectProjectTreeItem, self.GetTagName())
+            wx.CallAfter(pub.sendMessage, path, e=res)
             event.Skip()
         return OnTextCtrlChanged
 
@@ -611,6 +615,7 @@ class ConfTreeNodeEditor(EditorPanel):
         def OnCheckBoxChanged(event):
             res = self.SetConfNodeParamsAttribute(path, chkbx.IsChecked())
             chkbx.SetValue(res)
+            wx.CallAfter(pub.sendMessage, path, e=res)
             event.Skip()
         return OnCheckBoxChanged
 
