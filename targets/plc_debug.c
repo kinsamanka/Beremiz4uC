@@ -376,6 +376,7 @@ void __publish_debug(void)
                     ((__IEC_##TYPENAME##_p *)varp)->flags |= __IEC_FORCE_FLAG;          \
                     /* inc force_buffer cursor */                                       \
                     force_buffer_cursor = next_cursor;                                  \
+                    (((__IEC_##TYPENAME##_p *)varp)->fvalue) = *((TYPENAME *)force);    \
                     /* outputs real value must be systematically forced */              \
                     if(vartype == TYPENAME##_O_ENUM)                                    \
                         *(((__IEC_##TYPENAME##_p *)varp)->value) = *((TYPENAME *)force);\
