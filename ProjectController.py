@@ -1479,14 +1479,12 @@ class ProjectController(ConfigTreeNode, PLCControler):
         PlcStatus.Stopped:      {"_Run": True,
                                  "_Transfer": True,
                                  "_Connect": False,
-                                 "_Disconnect": True,
-                                 "_Repair": True},
+                                 "_Disconnect": True},
         PlcStatus.Empty:        {"_Transfer": True,
                                  "_Connect": False,
                                  "_Disconnect": True},
-        PlcStatus.Broken:       {"_Connect": False,
-                                 "_Repair": True,
-                                 "_Disconnect": True},
+        PlcStatus.Broken:       {"_Connect": True,
+                                 "_Disconnect": False},
         PlcStatus.Disconnected: {},
     }
 
