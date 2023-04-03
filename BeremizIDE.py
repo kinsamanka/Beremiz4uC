@@ -26,6 +26,8 @@
 
 import os
 import pickle
+from pubsub import pub
+from serial.tools.list_ports import comports
 import sys
 import shutil
 import time
@@ -503,11 +505,32 @@ class Beremiz(IDEFrame, LocalRuntimeMixin):
         if self.EnableDebug:
             self.DebugVariablePanel.SetDataProducer(self.CTR)
 
+        self.port = self.GetConfigEntry("SerialPort", "")
+        if self.port:
+            pub.sendMessage("SerialPort", e=self.port)
+
+        t = self.Controler.GetCTRoot().BeremizRoot.getTargetType()
+        try:
+            self.platform_type = t.getcontent().getPlatform().getcontent().getLocalTag()
+        except AttributeError:
+            self.platform_type = None
+            
         self._Refresh(TITLE, EDITORTOOLBAR, FILEMENU, EDITMENU, DISPLAYMENU)
         self.RefreshAll()
         self.LogConsole.SetFocus()
 
         signal.signal(signal.SIGTERM,self.signalTERM_handler)
+
+        pub.subscribe(self.update_platform_type, "BeremizRoot_TargetType_Platform")
+        pub.subscribe(self.refresh_project, "BeremizRoot_TargetType_Platform_Board")
+
+    def update_platform_type(self, e):
+        self.platform_type = e
+        self.KillLocalRuntime()
+        wx.CallAfter(self.RefreshStatusToolBar)
+
+    def refresh_project(self, e):
+        wx.CallAfter(self._Refresh, PROJECTTREE, PAGETITLES)
 
     def RefreshTitle(self):
         name = _("Beremiz")
@@ -751,12 +774,36 @@ class Beremiz(IDEFrame, LocalRuntimeMixin):
         if self.CTR is not None:
 
             for confnode_method in self.CTR.StatusMethods:
-                if "method" in confnode_method and confnode_method.get("shown", True):
-                    tool = StatusToolBar.AddTool(
-                        wx.ID_ANY, confnode_method["name"],
-                        GetBitmap(confnode_method.get("bitmap", "Unknown")),
-                        confnode_method["tooltip"])
-                    self.Bind(wx.EVT_MENU, self.GetMenuCallBackFunction(confnode_method["method"]), tool)
+                if "method" in confnode_method:
+                    if confnode_method.get("combo", False):
+
+                        def update_combobox(e):
+                            self.port = e.GetString()
+                            self.Config.Write("SerialPort",
+                                              pickle.dumps(self.port,0))
+                            pub.sendMessage("SerialPort", e=self.port)
+
+                        cb = wx.ComboBox(
+                            StatusToolBar, wx.ID_ANY, self.port,
+                            choices=[a.name for a in comports()],
+                            style=wx.CB_DROPDOWN | wx.CB_READONLY)
+
+                        cb.SetToolTip(confnode_method["tooltip"])
+                        if (not confnode_method.get("shown", True) or
+                                self.platform_type != 'Embedded'):
+                            cb.Disable()
+
+                        StatusToolBar.AddControl(cb,)
+                        StatusToolBar.Bind(wx.EVT_COMBOBOX, update_combobox)
+
+                    elif confnode_method.get("shown", True):
+                        tool = StatusToolBar.AddTool(
+                            wx.ID_ANY, confnode_method["name"],
+                            GetBitmap(confnode_method.get("bitmap", "Unknown")),
+                            confnode_method["tooltip"])
+                        self.Bind(wx.EVT_MENU,
+                                  self.GetMenuCallBackFunction(confnode_method["method"]),
+                                  tool)
 
             StatusToolBar.Realize()
             self.AUIManager.GetPane("StatusToolBar").BestSize(StatusToolBar.GetBestSize()).Show()

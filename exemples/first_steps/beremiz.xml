@@ -1,5 +1,15 @@
 <?xml version='1.0' encoding='utf-8'?>
 <BeremizRoot xmlns:xsd="http://www.w3.org/2001/XMLSchema" URI_location="LOCAL://">
-  <TargetType/>
-  <Libraries Enable_Python_Library="false"/>
+  <TargetType>
+    <PlatformIO>
+      <Platform>
+        <Embedded Enable_Debug="true">
+          <Board>
+            <Blue_Pill/>
+          </Board>
+        </Embedded>
+      </Platform>
+    </PlatformIO>
+  </TargetType>
+  <Libraries Enable_Native_Library="false"/>
 </BeremizRoot>

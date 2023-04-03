@@ -9,6 +9,7 @@ import shutil
 
 from util.ProcessLogger import ProcessLogger
 from util.paths import Bpath
+from pubsub import pub
 
 _exec = sys.executable if "darwin" not in sys.platform else sys.executable + 'w'
 LocalRuntimeInterpreterPath = os.environ.get("BEREMIZPYTHONPATH", _exec)
@@ -23,8 +24,20 @@ class LocalRuntimeMixin():
         self.runtime_port = None
         self.local_runtime_tmpdir = None
         self.use_gui = use_gui
+        self._platform = None
 
     def StartLocalRuntime(self):
+        self._platform = self.platform_type
+        if self.platform_type == 'Embedded':
+            service = "service_pio.py"
+            if 'Win32' not in self.Controler.GetDefaultTargetName():
+                port = f'/dev/{self.port}'
+            else:
+                port = self.port
+        else:
+            service = 'service.py'
+            port = ''
+
         if (self.local_runtime is None) or (self.local_runtime.exitcode is not None):
             # create temporary directory for runtime working directory
             self.local_runtime_tmpdir = tempfile.mkdtemp()
@@ -34,12 +47,14 @@ class LocalRuntimeMixin():
             # launch local runtime
             self.local_runtime = ProcessLogger(
                 self.local_runtime_log,
-                ("\"%s\" \"%s\" -p %s -i "+LocalHost+" %s %s") % (
+                "\"%s\" \"%s\" -p %s -i %s %s %s %s" % (
                     LocalRuntimeInterpreterPath,
-                    Bpath("service.py"),
+                    Bpath(service),
                     self.runtime_port,
+                    LocalHost,
                     {False: "-x 0", True: "-x 1"}[self.use_gui],
-                    self.local_runtime_tmpdir),
+                    self.local_runtime_tmpdir,
+                    port),
                 no_gui=False,
                 timeout=500, keyword=self.local_runtime_tmpdir,
                 cwd=self.local_runtime_tmpdir)

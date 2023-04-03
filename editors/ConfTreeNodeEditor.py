@@ -579,7 +579,7 @@ class ConfTreeNodeEditor(EditorPanel):
             if res is None:
                 res = ""
             choicectrl.SetStringSelection(res)
-            wx.CallAfter(pub.sendMessage, path, e=res)
+            wx.CallAfter(pub.sendMessage, path.replace('.', '_'), e=res)
             event.Skip()
         return OnChoiceChanged
 
@@ -588,7 +588,7 @@ class ConfTreeNodeEditor(EditorPanel):
             self.SetConfNodeParamsAttribute(
                 path, choicectrl.GetStringSelection().replace(' ','_'))
             wx.CallAfter(self.RefreshConfNodeParamsSizer)
-            wx.CallAfter(pub.sendMessage, path, e=choicectrl.GetStringSelection())
+            wx.CallAfter(pub.sendMessage, path.replace('.', '_'), e=choicectrl.GetStringSelection())
             event.Skip()
         return OnChoiceContentChanged
 
@@ -603,7 +603,7 @@ class ConfTreeNodeEditor(EditorPanel):
             if refresh:
                 wx.CallAfter(self.ParentWindow._Refresh, TITLE, FILEMENU, PROJECTTREE, PAGETITLES)
                 wx.CallAfter(self.ParentWindow.SelectProjectTreeItem, self.GetTagName())
-            wx.CallAfter(pub.sendMessage, path, e=res)
+            wx.CallAfter(pub.sendMessage, path.replace('.', '_'), e=res)
             event.Skip()
         return OnTextCtrlChanged
 
@@ -618,7 +618,7 @@ class ConfTreeNodeEditor(EditorPanel):
         def OnCheckBoxChanged(event):
             res = self.SetConfNodeParamsAttribute(path, chkbx.IsChecked())
             chkbx.SetValue(res)
-            wx.CallAfter(pub.sendMessage, path, e=res)
+            wx.CallAfter(pub.sendMessage, path.replace('.', '_'), e=res)
             event.Skip()
         return OnCheckBoxChanged
 

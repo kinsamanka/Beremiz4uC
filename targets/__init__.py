@@ -26,15 +26,6 @@
 # Package initialisation
 
 
-"""
-Beremiz Targets
-
-- Target are python packages, containing at least one "XSD" file
-- Target class may inherit from a toolchain_(toolchainname)
-- The target folder's name must match to name define in the XSD for TargetType
-"""
-
-
 from os import listdir, path
 import util.paths as paths
 import importlib
@@ -44,62 +35,31 @@ import sys
 _base_path = paths.AbsDir(__file__)
 
 
-def _GetLocalTargetClassFactory(name):
-    return lambda: getattr(importlib.import_module(f"targets.{name}"), f"{name}_target")
-
-
-targets = dict([(name, {"xsd":   path.join(_base_path, name, "XSD"),
-                        "class": _GetLocalTargetClassFactory(name),
-                        "code":  {fname: path.join(_base_path, name, fname)
-                                  for fname in listdir(path.join(_base_path, name))
-                                  if (fname.startswith("plc_%s_main" % name) and
-                                      fname.endswith(".c"))}})
-                for name in listdir(_base_path)
-                if (path.isdir(path.join(_base_path, name)) and
-                    not name.startswith("__"))])
-
-toolchains = {"gcc":  path.join(_base_path, "XSD_toolchain_gcc"),
-              "makefile":  path.join(_base_path, "XSD_toolchain_makefile"),
-              "pio":  path.join(_base_path, "XSD_toolchain_pio")}
-
-
 def GetBuilder(targetname):
-    return targets[targetname]["class"]()
+    return (lambda: getattr(
+        importlib.import_module(f"targets.{targetname}"),
+        f"{targetname}_target"))()
 
 
 def GetTargetChoices():
-    DictXSD_toolchain = {}
-    targetchoices = ""
-
-    # Get all xsd toolchains
-    for toolchainname, xsdfilename in toolchains.items():
-        if 'pio' in toolchainname:
-            xsd = PIO_XSD
-        elif path.isfile(xsdfilename):
-            xsd = open(xsdfilename).read()
-
-        DictXSD_toolchain["toolchain_"+toolchainname] = xsd
-
-    # Get all xsd targets
-    for target_name, nfo in targets.items():
-        xsd_string = open(nfo["xsd"]).read()
-        targetchoices += xsd_string % dict(DictXSD_toolchain,
-                                           target_name=target_name)
-
-    return targetchoices
+    return PIO_XSD
 
 
 def GetTargetCode(targetname):
 
-    if 'PlatformIO' in targetname:
-        targetname = "Linux"
-        if sys.platform.startswith('darwin'):
-            targetname = "OSX"
-        elif sys.platform.startswith('win'):
-            targetname = "Win32"
+    name = "Linux"
+    if sys.platform.startswith('darwin'):
+        name = "OSX"
+    elif sys.platform.startswith('win'):
+        name = "Win32"
 
-    codedesc = targets[targetname]["code"]
-    code = "\n".join([open(fpath).read() for _fname, fpath in sorted(codedesc.items())])
+    codedesc = {
+        fname: path.join(_base_path, name, fname)
+        for fname in listdir(path.join(_base_path, name))
+        if (fname.startswith(f"plc_{name}_main")
+            and fname.endswith(".c"))}
+    code = "\n".join([open(fpath).read()
+                     for _fname, fpath in sorted(codedesc.items())])
     return code
 
 

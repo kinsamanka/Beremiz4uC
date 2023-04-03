@@ -94,7 +94,7 @@ typedef const struct {
 } dbgvardsc_t;
 
 static const dbgvardsc_t dbgvardsc[] = {
-%(variable_decl_array)s
+    %(variable_decl_array)s
 };
 
 static const dbgvardsc_index_t retain_list[] = {

@@ -39,6 +39,8 @@ import hashlib
 from datetime import datetime
 from weakref import WeakKeyDictionary
 from functools import reduce
+import sys
+from jinja2 import PackageLoader, Environment, FileSystemLoader
 
 from distutils.dir_util import copy_tree
 
@@ -1052,6 +1054,61 @@ class ProjectController(ConfigTreeNode, PLCControler):
 
         return True
 
+    def Generate_plc_debug_cvars(self):
+        """
+        Generate debug C variables out of PLC variable list
+        """
+        if not self._DbgVariablesList and not self._VariablesList:
+            self.GetIECProgramsAndVariables()
+
+        type_suffix = {"EXT": "_P_ENUM",
+                       "IN" : "_P_ENUM",
+                       "MEM": "_O_ENUM",
+                       "OUT": "_O_ENUM",
+                       "VAR": "_ENUM"}
+        variable_decl_array  = [
+            f"{{&({v['C_path']}), {v['type']}{type_suffix[v['vartype']]}}}"
+            for v in self._DbgVariablesList
+        ]
+
+        # unique list of types
+        enum_types = [*{*[f"{v['type']}{type_suffix[v['vartype']]}"
+                          for v in self._DbgVariablesList]}]
+
+        types = {"EXT": ("extern __IEC_", "_p"),
+                 "IN":  ("extern __IEC_", "_p"),
+                 "MEM": ("extern __IEC_", "_p"),
+                 "OUT": ("extern __IEC_", "_p"),
+                 "VAR": ("extern __IEC_", "_t"),
+                 "FB":  ("extern ", "")}
+        extern_variables_declarations = [
+            f"{types[v['vartype']][0]}{v['type']}{types[v['vartype']][1]} {v['C_path']};"
+            for v in self._VariablesList if '.' not in v['C_path']
+        ]
+
+        return variable_decl_array, extern_variables_declarations, enum_types
+
+    def generate_embed_plc_debugger(self, buildpath):
+        dvars, externs, enums = self.Generate_plc_debug_cvars()
+
+        base_folder = paths.AbsDir(__file__)
+        loader = FileSystemLoader(
+            os.path.join(base_folder, 'platformio', 'templates'))
+        template = Environment(loader=loader).get_template('debug.c.j2')
+
+        cfile = os.path.join(buildpath, 'debug.c')
+        with open(cfile, 'w') as f:
+            f.write(template.render(
+                debug={
+                    'externs': externs,
+                    'vars': dvars,
+                    'enums': enums,
+                    'types': list(set(a.split("_",1)[0] for a in enums))
+                })
+            )
+
+        return cfile, ''
+
     def Generate_plc_debugger(self):
         """
         Generate trace/debug code out of PLC variable list
@@ -1059,37 +1116,18 @@ class ProjectController(ConfigTreeNode, PLCControler):
         self.GetIECProgramsAndVariables()
 
         # prepare debug code
-        variable_decl_array = []
+        variable_decl_array, extern_variables_declarations, _ = self.Generate_plc_debug_cvars()
+
         retain_indexes = []
         for i, v in enumerate(self._DbgVariablesList):
-            variable_decl_array.append(
-                "{&(%(C_path)s), " % v +
-                {
-                    "EXT": "%(type)s_P_ENUM",
-                    "IN":  "%(type)s_P_ENUM",
-                    "MEM": "%(type)s_O_ENUM",
-                    "OUT": "%(type)s_O_ENUM",
-                    "VAR": "%(type)s_ENUM"
-                }[v["vartype"]] % v +
-                "}")
-
             if v["retain"] == "1":
                 retain_indexes.append("/* "+v["C_path"]+" */ "+str(i))
 
         debug_code = targets.GetCode("plc_debug.c") % {
             "programs_declarations": "\n".join(["extern %(type)s %(C_path)s;" %
                                                 p for p in self._ProgramList]),
-            "extern_variables_declarations": "\n".join([
-                {
-                    "EXT": "extern __IEC_%(type)s_p %(C_path)s;",
-                    "IN":  "extern __IEC_%(type)s_p %(C_path)s;",
-                    "MEM": "extern __IEC_%(type)s_p %(C_path)s;",
-                    "OUT": "extern __IEC_%(type)s_p %(C_path)s;",
-                    "VAR": "extern __IEC_%(type)s_t %(C_path)s;",
-                    "FB":  "extern       %(type)s   %(C_path)s;"
-                }[v["vartype"]] % v
-                for v in self._VariablesList if v["C_path"].find('.') < 0]),
-            "variable_decl_array": ",\n".join(variable_decl_array),
+            "extern_variables_declarations": "\n".join(extern_variables_declarations),
+            "variable_decl_array": ",\n    ".join(variable_decl_array),
             "retain_vardsc_index_array": ",\n".join(retain_indexes),
             "var_access_code": targets.GetCode("var_access.c")
         }
@@ -1229,6 +1267,10 @@ class ProjectController(ConfigTreeNode, PLCControler):
                 _("Runtime IO extensions C code generation failed !\n"))
             self.logger.write_error(traceback.format_exc())
             return False
+        finally:
+            # restore traceback if disabled
+            if hasattr(sys, 'tracebacklimit'):
+                delattr(sys, 'tracebacklimit')
 
         # Extensions also need plcCFLAGS in case they include beremiz.h
         CTNLocationCFilesAndCFLAGS = [
@@ -1259,6 +1301,21 @@ class ProjectController(ConfigTreeNode, PLCControler):
         # Header file for extensions
         open(os.path.join(buildpath, "beremiz.h"), "w").write(
             targets.GetHeader())
+
+        embed = False
+        debug = False
+        platform = self.GetTarget().getcontent().getPlatform()
+        if platform is not None:
+            embed = platform.getcontent().getLocalTag() == 'Embedded'
+            debug = platform.getcontent().getEnable_Debug()
+
+        if embed:
+            if debug:
+                self.LocationCFilesAndCFLAGS[0][1].insert(
+                    0, self.generate_embed_plc_debugger(buildpath))
+
+            self.logger.write(_("C code generated successfully.\n"))
+            return True
 
         # Template based part of C code generation
         # files are stacked at the beginning, as files of confnode tree root
@@ -1468,22 +1525,27 @@ class ProjectController(ConfigTreeNode, PLCControler):
         "_Transfer": False,
         "_Connect": True,
         "_Repair": False,
-        "_Disconnect": False
+        "_Disconnect": False,
+        "_Port": True,
     }
 
     MethodsFromStatus = {
         PlcStatus.Started:      {"_Stop": True,
                                  "_Transfer": True,
                                  "_Connect": False,
+                                 "_Port": False,
                                  "_Disconnect": True},
         PlcStatus.Stopped:      {"_Run": True,
                                  "_Transfer": True,
                                  "_Connect": False,
+                                 "_Port": False,
                                  "_Disconnect": True},
         PlcStatus.Empty:        {"_Transfer": True,
                                  "_Connect": False,
+                                 "_Port": False,
                                  "_Disconnect": True},
         PlcStatus.Broken:       {"_Connect": True,
+                                 "_Port": True,
                                  "_Disconnect": False},
         PlcStatus.Disconnected: {},
     }
@@ -2067,6 +2129,12 @@ class ProjectController(ConfigTreeNode, PLCControler):
             "tooltip": _("Repair broken PLC"),
             "method":   "_Repair",
             "shown":      False,
+        },
+        {
+            "combo":    True,
+            "name":    _("Port"),
+            "tooltip": _("Programming Port"),
+            "method":   "_Port",
         },
         {
             "bitmap":    "ShowIECcode",
