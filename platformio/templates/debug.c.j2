@@ -118,15 +118,19 @@ void force_var(size_t idx, bool forced, void *val)
 {%- for t in debug.types -%}
     {% if '{}_ENUM'.format(t) in debug.enums %}
         case {{ t }}_ENUM:
+            ((__IEC_{{ t }}_t *) ptr)->flags &= ~__IEC_FORCE_FLAG;
+            break;
     {%- endif %}
+    {%- if '{}_O_ENUM'.format(t) in debug.enums or '{}_P_ENUM'.format(t) in debug.enums %}
     {%- if '{}_O_ENUM'.format(t) in debug.enums %}
         case {{ t }}_O_ENUM:
     {%- endif %}
     {%- if '{}_P_ENUM'.format(t) in debug.enums %}
         case {{ t }}_P_ENUM:
     {%- endif %}
-            ((__IEC_{{ t }}_t *) ptr)->flags &= ~__IEC_FORCE_FLAG;
+            ((__IEC_{{ t }}_p *) ptr)->flags &= ~__IEC_FORCE_FLAG;
             break;
+    {%- endif %}
 {%- endfor %}
         default:
             break;

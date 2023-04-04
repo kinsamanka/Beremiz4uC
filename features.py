@@ -13,6 +13,7 @@ libraries = [
 ]
 
 catalog = [
+    ('embed', _('Embedded support'), _('Add HW support'), 'embed.Root'),
     ('c_ext', _('C extension'), _('Add C code accessing located variables synchronously'), 'c_ext.CFile'),
 ]
 

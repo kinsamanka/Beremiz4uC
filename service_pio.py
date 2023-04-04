@@ -62,12 +62,11 @@ IDLE_COUNT = 10
  MIN_PLC_RESET,
  MIN_PLC_INIT,
  MIN_PLC_UPLOAD,
- MIN_PLC_FORCE,
  MIN_PLC_TICK,
  MIN_PLC_SET_TRACE,
  MIN_PLC_GET_TRACE,
  MIN_PLC_WAIT_TRACE,
- MIN_PLC_RESET_TRACE) = range(0, 12)
+ MIN_PLC_RESET_TRACE) = range(0, 11)
 
 IEC_SIZES = {'BOOL': 1, 'BYTE': 1, 'DATE': 8, 'DINT': 4, 'DT': 8, 'DWORD': 4,
              'INT': 2, 'LINT': 8, 'LREAL': 8, 'LWORD': 8, 'REAL': 4, 'SINT': 1,
@@ -532,16 +531,17 @@ class MINPLCObject(MINTransport):
                 # init trace
                 self.trace.update({ids: bytes(IEC_SIZES[t])})
 
-                if not v:
+                val = v
+                if v is None:
                     if IEC_FORMAT[t] != 's':
-                        v = 0
+                        val = 0
                     else:
-                        v = b''
+                        val = b''
 
                 p = (pack('I', ids)
                      + pack('I', IEC_SIZES[t])
-                     + pack('?', v)
-                     + pack(IEC_FORMAT[t], v))
+                     + pack('?', v is not None)
+                     + pack(IEC_FORMAT[t], val))
 
                 self.send_cmd(MIN_PLC_SET_TRACE, p)
 

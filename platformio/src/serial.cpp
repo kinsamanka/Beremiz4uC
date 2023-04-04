@@ -40,12 +40,11 @@ void config_init__(void);
 #define MIN_PLC_RESET           3
 #define MIN_PLC_INIT            4
 #define MIN_PLC_UPLOAD          5
-#define MIN_PLC_FORCE           6
-#define MIN_PLC_TICK            7
-#define MIN_PLC_SET_TRACE       8
-#define MIN_PLC_GET_TRACE       9
-#define MIN_PLC_WAIT_TRACE      10
-#define MIN_PLC_RESET_TRACE     11
+#define MIN_PLC_TICK            6
+#define MIN_PLC_SET_TRACE       7
+#define MIN_PLC_GET_TRACE       8
+#define MIN_PLC_WAIT_TRACE      9
+#define MIN_PLC_RESET_TRACE     10
 
 #define BUFFER_SIZE             32
 
@@ -102,8 +101,6 @@ static struct {
 
 static async min_task(unsigned long dt, struct min_state *pt)
 {
-    size_t idx;
-
     async_begin(pt);
 
     pt->dt = dt;
@@ -139,11 +136,9 @@ static async min_task(unsigned long dt, struct min_state *pt)
 
             run_bootloader();
 
-        } else if (min_data.id == MIN_PLC_FORCE) {
-
-            force_var(0, 0, 0);
-
         } else if (min_data.id == MIN_PLC_WAIT_TRACE) {
+
+            pt->idx = ((uint16_t *)min_data.buf)[0];
 
             pt->last_tick = tick;
 
@@ -152,14 +147,15 @@ static async min_task(unsigned long dt, struct min_state *pt)
             pt->last_tick = tick;
             min_queue_frame(&min_ctx, MIN_PLC_TICK, (uint8_t *) & tick, 4);
 
-            idx = ((uint16_t *)min_data.buf)[0];
-
             min_queue_frame(&min_ctx, MIN_PLC_GET_TRACE,
-                            (uint8_t *)get_var_addr(idx),
-                            get_var_size(idx));
+                            (uint8_t *)get_var_addr(pt->idx),
+                            get_var_size(pt->idx));
+
             async_yield;
 
         } else if (min_data.id == MIN_PLC_GET_TRACE) {
+
+            pt->idx = ((uint16_t *)min_data.buf)[0];
 
             if (tick != pt->last_tick) {
 
@@ -168,19 +164,11 @@ static async min_task(unsigned long dt, struct min_state *pt)
 
             }
 
-            idx = ((uint16_t *)min_data.buf)[0];
-
             min_queue_frame(&min_ctx, MIN_PLC_GET_TRACE,
-                            (uint8_t *)get_var_addr(idx),
-                            get_var_size(idx));
+                            (uint8_t *)get_var_addr(pt->idx),
+                            get_var_size(pt->idx));
+
             async_yield;
-
-        } else if (min_data.id == MIN_PLC_SET_TRACE) {
-
-            idx = ((size_t *)min_data.buf)[0];
-            if (((size_t *)min_data.buf)[1] == get_var_size(idx))
-                set_trace(idx, ((bool *)min_data.buf)[8],
-                          (void *)&min_data.buf[9]);
 
         } else if (min_data.id == MIN_PLC_RESET_TRACE) {
 
@@ -230,14 +218,28 @@ void min_application_handler(uint8_t min_id,
                              uint8_t const *min_payload, uint8_t len_payload,
                              uint8_t port)
 {
+    uint8_t buf[8];
+
     /* keep alive */
     min_poll_state.keepalive = min_poll_state.dt;
 
-    min_data.id = min_id;
-    min_data.len = len_payload;
-    memcpy(min_data.buf, min_payload, len_payload);
+    if (min_id == MIN_PLC_SET_TRACE) {
 
-    signal_sem(&ready);
+        size_t idx = ((size_t *)min_payload)[0];
+        bool forced = ((bool *)min_payload)[8];
+
+        for (size_t i=0; i < get_var_size(idx); i++)
+            buf[i] = min_payload[9 + i];
+
+        set_trace(idx, forced, (void *)buf);
+
+    } else {
+        min_data.id = min_id;
+        min_data.len = len_payload;
+        memcpy(min_data.buf, min_payload, len_payload);
+
+        signal_sem(&ready);
+    }
 }
 
 uint16_t min_tx_space(uint8_t port)
@@ -257,9 +259,6 @@ uint32_t min_time_ms(void)
 
 void serial_init(void)
 {
-    Serial2.begin(STM32_BAUD_RATE);
-    Serial2.flush();
-
     MINPORT.begin(STM32_BAUD_RATE);
     MINPORT.flush();
 

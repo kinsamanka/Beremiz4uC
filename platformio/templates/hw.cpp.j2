@@ -1,0 +1,69 @@
+/*
+ * This file is part of Beremiz for uC
+ *
+ * Copyright (C) 2023 GP Orcullo
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+#include "Arduino.h"
+#include "hw.h"
+
+#define NUM(a) (sizeof(a) / sizeof(*a))
+
+const uint16_t pinMask_AIN[] = {{hw.ain}};
+const uint16_t pinMask_AOUT[] = {{hw.aout}};
+const uint8_t pinMask_DIN[] = {{hw.din}};
+const uint8_t pinMask_DOUT[] = {{hw.dout}};
+
+uint16_t _ain[{{ hw.ain_size }}];
+uint16_t _aout[{{ hw.aout_size }}];
+uint8_t _din[{{ hw.din_size }}];
+uint8_t _dout[{{ hw.dout_size }}];
+
+{{ hw.located_vars }}
+
+void hardware_init(void)
+{
+    for (size_t i = 0; i < NUM(pinMask_DIN); i++)
+        pinMode(pinMask_DIN[i], INPUT);
+
+    for (size_t i = 0; i < NUM(pinMask_AIN); i++)
+        pinMode(pinMask_AIN[i], INPUT);
+
+    for (size_t i = 0; i < NUM(pinMask_DOUT); i++)
+        pinMode(pinMask_DOUT[i], OUTPUT);
+
+    for (size_t i = 0; i < NUM(pinMask_AOUT); i++)
+        pinMode(pinMask_AOUT[i], OUTPUT);
+}
+
+void update_inputs(void)
+{
+    for (size_t i = 0; i < {{hw.din_size}}; i++)
+        _din[i] = digitalRead(pinMask_DIN[i]);
+
+    for (size_t i = 0; i < {{hw.ain_size}}; i++)
+        _ain[i] = (analogRead(pinMask_AIN[i]) * 64);
+}
+
+void update_outputs(void)
+{
+    for (size_t i = 0; i < {{hw.dout_size}}; i++)
+        digitalWrite(pinMask_DOUT[i], _dout[i]);
+
+    for (size_t i = 0; i < {{hw.aout_size}}; i++)
+        analogWrite(pinMask_AOUT[i], _aout[i] / 256);
+}
