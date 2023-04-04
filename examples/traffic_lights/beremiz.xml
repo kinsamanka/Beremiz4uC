@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<BeremizRoot URI_location="LOCAL://">
+  <TargetType>
+    <PlatformIO>
+      <Platform>
+        <Embedded Enable_Debug="true">
+          <Board>
+            <Blue_Pill/>
+          </Board>
+        </Embedded>
+      </Platform>
+    </PlatformIO>
+  </TargetType>
+  <Libraries Enable_Native_Library="false"/>
+</BeremizRoot>
