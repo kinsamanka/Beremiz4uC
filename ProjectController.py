@@ -1307,7 +1307,8 @@ class ProjectController(ConfigTreeNode, PLCControler):
         platform = self.GetTarget().getcontent().getPlatform()
         if platform is not None:
             embed = platform.getcontent().getLocalTag() == 'Embedded'
-            debug = platform.getcontent().getEnable_Debug()
+            if embed:
+                debug = platform.getcontent().getEnable_Debug()
 
         if embed:
             if debug:
