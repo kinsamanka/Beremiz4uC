@@ -24,11 +24,9 @@ class LocalRuntimeMixin():
         self.runtime_port = None
         self.local_runtime_tmpdir = None
         self.use_gui = use_gui
-        self._platform = None
 
     def StartLocalRuntime(self):
-        self._platform = self.platform_type
-        if self.platform_type == 'Embedded':
+        if self.Controler.IsEmbeddedPlatform():
             service = "service_pio.py"
             if 'Win32' not in self.Controler.GetDefaultTargetName():
                 port = f'/dev/{self.port}'

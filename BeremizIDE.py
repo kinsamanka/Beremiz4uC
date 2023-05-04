@@ -509,12 +509,6 @@ class Beremiz(IDEFrame, LocalRuntimeMixin):
         if self.port:
             pub.sendMessage("SerialPort", e=self.port)
 
-        t = self.Controler.GetCTRoot().BeremizRoot.getTargetType()
-        try:
-            self.platform_type = t.getcontent().getPlatform().getcontent().getLocalTag()
-        except AttributeError:
-            self.platform_type = None
-            
         self._Refresh(TITLE, EDITORTOOLBAR, FILEMENU, EDITMENU, DISPLAYMENU)
         self.RefreshAll()
         self.LogConsole.SetFocus()
@@ -525,7 +519,6 @@ class Beremiz(IDEFrame, LocalRuntimeMixin):
         pub.subscribe(self.refresh_project, "BeremizRoot_TargetType_Platform_Board")
 
     def update_platform_type(self, e):
-        self.platform_type = e
         self.KillLocalRuntime()
         wx.CallAfter(self.RefreshStatusToolBar)
 
@@ -790,7 +783,7 @@ class Beremiz(IDEFrame, LocalRuntimeMixin):
 
                         cb.SetToolTip(confnode_method["tooltip"])
                         if (not confnode_method.get("shown", True) or
-                                self.platform_type != 'Embedded'):
+                                not self.Controler.IsEmbeddedPlatform()):
                             cb.Disable()
 
                         StatusToolBar.AddControl(cb,)

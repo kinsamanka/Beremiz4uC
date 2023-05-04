@@ -225,11 +225,8 @@ class Root():
                    '\n'.join(bad) + '\n')
             self.generate_exception('LocationError', msg)
 
-        target = self.GetCTRoot().BeremizRoot.getTargetType()
-        platform = target.getcontent().getPlatform()
-        if platform is not None:
-            if platform.getcontent().getLocalTag() == 'Embedded':
-                return [], '', False
+        if self.GetCTRoot().IsEmbeddedPlatform():
+            return [], '', False
 
         self.GetCTRoot().logger.write_warning(
             'Native mode, generating dummy locations.\n')

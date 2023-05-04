@@ -1292,15 +1292,9 @@ class ProjectController(ConfigTreeNode, PLCControler):
         open(os.path.join(buildpath, "beremiz.h"), "w").write(
             targets.GetHeader())
 
-        embed = False
-        debug = False
-        platform = self.GetTarget().getcontent().getPlatform()
-        if platform is not None:
-            embed = platform.getcontent().getLocalTag() == 'Embedded'
-            if embed:
-                debug = platform.getcontent().getEnable_Debug()
-
-        if embed:
+        if self.IsEmbeddedPlatform():
+            platform = self.GetTarget().getcontent().getPlatform()
+            debug = platform.getcontent().getEnable_Debug()
             if debug:
                 self.LocationCFilesAndCFLAGS[0][1].insert(
                     0, self.generate_embed_plc_debugger(buildpath))
@@ -2169,3 +2163,13 @@ class ProjectController(ConfigTreeNode, PLCControler):
         for d in self.StatusMethods:
             if d["method"] == method and d.get("enabled", True) and d.get("shown", True):
                 getattr(self, method)()
+
+    def IsEmbeddedPlatform(self):
+        embed = False
+        content = self.GetTarget().getcontent()
+        if content is not None:
+            platform = self.GetTarget().getcontent().getPlatform()
+            if platform is not None:
+                embed = platform.getcontent().getLocalTag() == 'Embedded'
+
+        return embed
